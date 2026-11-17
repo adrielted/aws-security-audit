@@ -11,3 +11,25 @@ for bucket in response["Buckets"]:
         print(f"ALERT: {name} has a public access gap")
     else:
         print(f"OK: {name} is protected")
+
+sts = session.client("sts")
+identity = sts.get_caller_identity()
+account_id = identity["Account"]
+
+iam = session.client("iam")
+roles_response = iam.list_roles()
+
+for role in roles_response["Roles"]:
+    rolename = role["RoleName"]
+    policy = role["AssumeRolePolicyDocument"]
+    for statement in policy["Statement"]:
+        principal = statement["Principal"]
+        if "AWS" in principal:
+            trusted_account = principal["AWS"].split(":")[4]
+            if trusted_account != account_id:
+                print(f"REVIEW: {rolename} trusts external account {trusted_account}")
+                
+
+            
+            
+
